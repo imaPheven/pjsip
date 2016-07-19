@@ -61,6 +61,11 @@ function config_site() {
     fi
 
     echo "#define PJ_CONFIG_IPHONE 1" >> "${PJSIP_CONFIG_PATH}"
+    
+    # Allows for support of IPV6 Support in pjlib
+    # see https://trac.pjsip.org/repos/wiki/IPv6
+    echo "#define PJ_HAS_IPV6 1" >> "${PJSIP_CONFIG_PATH}"
+    
     if [[ ${OPENH264_PREFIX} ]]; then
         echo "#define PJMEDIA_HAS_OPENH264_CODEC 1" >> "${PJSIP_CONFIG_PATH}"
         HAS_VIDEO=1
