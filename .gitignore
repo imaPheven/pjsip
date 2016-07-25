@@ -1,6 +1,9 @@
 .DS_Store
 build/*
 
+# editors
+.idea
+
 # openh264
 !build/openh264
 build/openh264/*
