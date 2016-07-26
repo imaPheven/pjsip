@@ -13,6 +13,13 @@ function download() {
 BASE_DIR="$1"
 PJSIP_URL="http://www.pjsip.org/release/2.5.1/pjproject-2.5.1.tar.bz2"
 PJSIP_DIR="$1/src"
+PROJECTS=("pjlib" \
+           "pjlib-util" \
+           "pjmedia" \
+           "pjnath" \
+           #"pjsip" \
+           #"third_party"
+           )
 LIB_PATHS=("pjlib/lib" \
            "pjlib-util/lib" \
            "pjmedia/lib" \
@@ -169,42 +176,60 @@ function lipo() {
     echo "Lipo libs..."
 
     TMP=`mktemp -t lipo`
+    ARCHS=$@
     while [ $# -gt 0 ]; do
         ARCH=$1
         for LIB_DIR in ${LIB_PATHS[*]}; do
             ARGS=""
             DST_DIR="${PJSIP_DIR}/${LIB_DIR}"
             SRC_DIR="${DST_DIR}-${ARCH}"
-
+            OPTIONS=""
             for FILE in `ls -l1 "${SRC_DIR}"`; do
-                OPTIONS="-arch ${ARCH} ${SRC_DIR}/${FILE}"
-                EXISTS=`cat "${TMP}" | grep "${FILE}"`
-                if [[ ${EXISTS} ]]; then
-                    SED_SRC="${FILE}$"
-                    SED_SRC="${SED_SRC//\//\\/}"
-                    SED_DST="${FILE} ${OPTIONS}"
-                    SED_DST="${SED_DST//\//\\/}"
-                    sed -i.bak "s/${SED_SRC}/${SED_DST}/" "${TMP}"
-                    rm "${TMP}.bak"
+                #while [ $# -gt 0 ]; do
+                    #echo "${OPTIONS} -arch ${ARCH} ${SRC_DIR}/${FILE} "
+                    #OPTIONS= "${OPTIONS} -arch ${ARCH} ${SRC_DIR}/${FILE} "
+                    OPTIONS="-arch ${ARCH} ${SRC_DIR}/${FILE}"
+                    SRC_DIR="${DST_DIR}-${ARCH}"
+                    EXISTS=`cat "${TMP}" | grep "${FILE}"`
+                    if [[ ${EXISTS} ]]; then
+                        SED_SRC="${FILE}$"
+                        SED_SRC="${SED_SRC//\//\\/}"
+                        SED_DST="${FILE} ${OPTIONS}"
+                        SED_DST="${SED_DST//\//\\/}"
+                        sed -i.bak "s/${SED_SRC}/${SED_DST}/" "${TMP}"
+                        rm "${TMP}.bak"
 
-                else
-                    echo "${OPTIONS}" >> "${TMP}"
-                fi
+                    else
+                        echo "${OPTIONS}" >> "${TMP}"
+                    fi
+                    #shift
+                #done
             done
         done
         shift
     done
-
-    while read LINE; do
-        COMPONENTS=($LINE)
-        LAST=${COMPONENTS[@]:(-1)}
-        PREFIX=$(dirname $(dirname "${LAST}"))
-        OUTPUT="${PREFIX}/lib/`basename ${LAST}`"
+    echo ${PROJECTS[*]}
+    echo ${BASE_DIR}
+    for PROJECT in ${PROJECTS[*]}; do
+        #get all the architectures on one line
+        LINE=$(cat ${TMP} | grep /${PROJECT}/)
+        # build output path
+        OUTPUT=${BASE_DIR}/src/${PROJECT}/lib/lib${PROJECT}-arm-apple-darwin9.a
+        #DEBUG
+        #echo xcrun -sdk iphoneos lipo ${LINE} -create -output ${OUTPUT}
         xcrun -sdk iphoneos lipo ${LINE} -create -output ${OUTPUT}
-    done < "${TMP}"
+    done
+    #while read LINE; do
+        #COMPONENTS=($LINE)
+        #LAST=${COMPONENTS[@]:(-1)}
+        #PREFIX=$(dirname $(dirname "${LAST}"))
+        #OUTPUT="${PREFIX}/lib/`basename ${LAST}`"
+        #echo xcrun -sdk iphoneos lipo ${LINE} -create -output ${OUTPUT}
+        #xcrun -sdk iphoneos lipo ${LINE} -create -output ${OUTPUT}
+    #done < "${TMP}"
 }
 
-download "${PJSIP_URL}" "${PJSIP_DIR}"
-config_site "${PJSIP_DIR}"
-armv7 && armv7s && arm64 && i386 && x86_64
+#download "${PJSIP_URL}" "${PJSIP_DIR}"
+#config_site "${PJSIP_DIR}"
+#armv7 && armv7s && arm64 && i386 && x86_64
 lipo armv7 armv7s arm64 i386 x86_64
